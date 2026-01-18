@@ -1,17 +1,27 @@
 """
 WebRTC Signaling Server for SafeStream
 Handles WebSocket connections for WebRTC peer connection signaling.
+Also handles video recording storage and retrieval.
 """
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from typing import Dict, List, Optional
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 import json
 import asyncio
+import os
+import uuid
+from pathlib import Path
 
 app = FastAPI(title="SafeStream Signaling Server")
+
+# Create recordings directory
+RECORDINGS_DIR = Path(__file__).parent / "recordings"
+RECORDINGS_DIR.mkdir(exist_ok=True)
 
 # CORS for frontend
 app.add_middleware(
@@ -22,6 +32,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Serve recordings as static files
+app.mount("/recordings", StaticFiles(directory=str(RECORDINGS_DIR)), name="recordings")
+
 @dataclass
 class StreamInfo:
     id: str
@@ -31,8 +44,22 @@ class StreamInfo:
     notes: str
     is_active: bool = True
 
+@dataclass 
+class PastStreamInfo:
+    id: str
+    started_at: str
+    ended_at: str
+    latitude: float
+    longitude: float
+    notes: str
+    duration_seconds: float
+    video_filename: str
+    video_url: str
+
 # Store active streams and their broadcasters
 active_streams: Dict[str, StreamInfo] = {}
+# Store past streams metadata (in production, use a database)
+past_streams: Dict[str, PastStreamInfo] = {}
 # WebSocket connections: stream_id -> broadcaster WebSocket
 broadcasters: Dict[str, WebSocket] = {}
 # WebSocket connections: stream_id -> list of viewer WebSockets
@@ -44,7 +71,12 @@ dashboard_connections: List[WebSocket] = []
 async def broadcast_stream_list():
     """Notify all dashboard connections of stream list changes."""
     stream_list = [asdict(s) for s in active_streams.values()]
-    message = json.dumps({"type": "stream_list", "streams": stream_list})
+    past_stream_list = [asdict(s) for s in past_streams.values()]
+    message = json.dumps({
+        "type": "stream_list", 
+        "streams": stream_list,
+        "past_streams": past_stream_list
+    })
     
     disconnected = []
     for ws in dashboard_connections:
@@ -68,15 +100,95 @@ async def get_streams():
     return {"streams": [asdict(s) for s in active_streams.values()]}
 
 
+@app.get("/past-streams")
+async def get_past_streams():
+    """Get list of past recorded streams."""
+    return {"past_streams": [asdict(s) for s in past_streams.values()]}
+
+
+@app.get("/past-streams/{stream_id}")
+async def get_past_stream(stream_id: str):
+    """Get a specific past stream."""
+    if stream_id not in past_streams:
+        raise HTTPException(status_code=404, detail="Stream not found")
+    return asdict(past_streams[stream_id])
+
+
+@app.post("/upload-recording")
+async def upload_recording(
+    stream_id: str = Form(...),
+    started_at: str = Form(...),
+    ended_at: str = Form(...),
+    latitude: float = Form(...),
+    longitude: float = Form(...),
+    notes: str = Form(""),
+    duration_seconds: float = Form(...),
+    video: UploadFile = File(...)
+):
+    """Upload a recorded stream video."""
+    # Generate unique filename
+    video_filename = f"{stream_id}_{uuid.uuid4().hex[:8]}.webm"
+    video_path = RECORDINGS_DIR / video_filename
+    
+    # Save the video file
+    with open(video_path, "wb") as f:
+        content = await video.read()
+        f.write(content)
+    
+    # Store metadata
+    past_stream = PastStreamInfo(
+        id=stream_id,
+        started_at=started_at,
+        ended_at=ended_at,
+        latitude=latitude,
+        longitude=longitude,
+        notes=notes,
+        duration_seconds=duration_seconds,
+        video_filename=video_filename,
+        video_url=f"/recordings/{video_filename}"
+    )
+    past_streams[stream_id] = past_stream
+    
+    # Notify dashboards
+    await broadcast_stream_list()
+    
+    return {"success": True, "stream": asdict(past_stream)}
+
+
+@app.delete("/past-streams/{stream_id}")
+async def delete_past_stream(stream_id: str):
+    """Delete a past stream recording."""
+    if stream_id not in past_streams:
+        raise HTTPException(status_code=404, detail="Stream not found")
+    
+    # Delete the video file
+    video_path = RECORDINGS_DIR / past_streams[stream_id].video_filename
+    if video_path.exists():
+        video_path.unlink()
+    
+    # Remove from metadata
+    del past_streams[stream_id]
+    
+    # Notify dashboards
+    await broadcast_stream_list()
+    
+    return {"success": True}
+
+
 @app.websocket("/ws/dashboard")
 async def dashboard_websocket(websocket: WebSocket):
     """WebSocket for dashboard to receive stream list updates."""
     await websocket.accept()
     dashboard_connections.append(websocket)
     
-    # Send current stream list
+    # Send current stream list including past streams
     stream_list = [asdict(s) for s in active_streams.values()]
-    await websocket.send_text(json.dumps({"type": "stream_list", "streams": stream_list}))
+    past_stream_list = [asdict(s) for s in past_streams.values()]
+    await websocket.send_text(json.dumps({
+        "type": "stream_list", 
+        "streams": stream_list,
+        "past_streams": past_stream_list
+    }))
     
     try:
         while True:

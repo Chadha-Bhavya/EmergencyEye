@@ -17,6 +17,8 @@ export default function StreamPage() {
   const { location, watchLocation, stopWatching } = useGeolocation();
 
   const handleStartClick = () => {
+    // Start location tracking early so we have coordinates when stream starts
+    watchLocation();
     setShowConfirmModal(true);
   };
 
@@ -24,9 +26,6 @@ export default function StreamPage() {
     async (userNotes: string) => {
       setIsStarting(true);
       setNotes(userNotes);
-
-      // Start location tracking
-      watchLocation();
 
       // Start media stream
       const success = await startStream();
@@ -37,7 +36,7 @@ export default function StreamPage() {
 
       setIsStarting(false);
     },
-    [startStream, watchLocation]
+    [startStream]
   );
 
   const handleStopStream = useCallback(() => {

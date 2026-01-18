@@ -9,20 +9,39 @@ import {
   RotateCcw,
   Video,
   Home,
+  Clock,
+  Play,
+  Calendar,
+  Trash2,
+  LayoutGrid,
+  Map,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { StreamCardLive, type StreamData } from "@/components/StreamCardLive";
 import { ExpandedStreamView } from "@/components/ExpandedStreamView";
-import { useDashboard, type StreamInfo } from "@/hooks/useDashboard";
+import { PastStreamViewer } from "@/components/PastStreamViewer";
+import { StreamMapView } from "@/components/StreamMapView";
+import { useDashboard, type StreamInfo, type PastStreamInfo } from "@/hooks/useDashboard";
 
 // Convert server stream info to StreamData format
 function serverToStreamData(info: StreamInfo): StreamData {
@@ -58,7 +77,10 @@ function getDistanceKm(
 
 export default function PoliceDashboard() {
   const [selectedStream, setSelectedStream] = useState<StreamData | null>(null);
+  const [selectedPastStream, setSelectedPastStream] = useState<PastStreamInfo | null>(null);
+  const [streamToDelete, setStreamToDelete] = useState<PastStreamInfo | null>(null);
   const [durations, setDurations] = useState<Record<string, number>>({});
+  const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
 
   // Location filter state
   const [filterEnabled, setFilterEnabled] = useState(false);
@@ -67,7 +89,7 @@ export default function PoliceDashboard() {
   const [filterRadius, setFilterRadius] = useState(10); // km
 
   // Connect to signaling server
-  const { streams: serverStreams, isConnected } = useDashboard();
+  const { streams: serverStreams, pastStreams, isConnected, deletePastStream } = useDashboard();
 
   // Convert and filter streams
   const allStreams = useMemo(() => {
@@ -128,6 +150,34 @@ export default function PoliceDashboard() {
         }
       );
     }
+  };
+
+  const handleDeletePastStream = async () => {
+    if (!streamToDelete) return;
+    try {
+      await deletePastStream(streamToDelete.id);
+      setStreamToDelete(null);
+      setSelectedPastStream(null);
+    } catch (err) {
+      console.error("Failed to delete:", err);
+    }
+  };
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const formatTimestamp = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
 
   return (
@@ -284,54 +334,203 @@ export default function PoliceDashboard() {
       </header>
 
       {/* Main */}
-      <main className="p-4 lg:p-6">
-        {allStreams.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {allStreams.map((stream) => (
-              <StreamCardLive
-                key={stream.id}
-                stream={stream}
-                duration={durations[stream.id] || 0}
-                onClick={() => setSelectedStream(stream)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex min-h-[70vh] flex-col items-center justify-center">
-            <div className="text-center max-w-sm">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-900 border border-zinc-800">
-                <Video className="h-7 w-7 text-zinc-600" />
+      <main className="p-4 lg:p-6 space-y-8">
+        {/* Live Streams Section */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-red-600/20 border border-red-500/30">
+                <Video className="h-4 w-4 text-red-500" />
               </div>
-              <h2 className="text-lg font-semibold text-zinc-300">No Active Streams</h2>
-              <p className="mt-1.5 text-sm text-zinc-500 leading-relaxed">
-                {filterEnabled
-                  ? "No streams found within the specified location radius."
-                  : "Waiting for incoming emergency streams..."}
-              </p>
-              <div className="mt-5 flex items-center justify-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                </span>
-                <span className="text-xs text-zinc-500">System monitoring active</span>
+              <div>
+                <h2 className="text-lg font-semibold text-white">Live Streams</h2>
+                <p className="text-xs text-zinc-500">
+                  {allStreams.length > 0 
+                    ? `${allStreams.length} active stream${allStreams.length !== 1 ? 's' : ''}`
+                    : 'No active streams'}
+                </p>
               </div>
-              {filterEnabled && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={resetFilter}
-                  className="mt-4 text-xs border-zinc-700 bg-zinc-900 hover:bg-zinc-800"
-                >
-                  <RotateCcw className="h-3 w-3 mr-1.5" />
-                  Clear Filter
-                </Button>
-              )}
+            </div>
+
+            {/* View Toggle */}
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-zinc-900 border border-zinc-800">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode("grid")}
+                className={`h-8 px-3 gap-1.5 text-xs ${
+                  viewMode === "grid"
+                    ? "bg-zinc-800 text-white"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                Grid
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode("map")}
+                className={`h-8 px-3 gap-1.5 text-xs ${
+                  viewMode === "map"
+                    ? "bg-zinc-800 text-white"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                <Map className="h-3.5 w-3.5" />
+                Map
+              </Button>
             </div>
           </div>
-        )}
+
+          {viewMode === "map" ? (
+            <StreamMapView
+              streams={allStreams}
+              durations={durations}
+              onStreamClick={(stream) => setSelectedStream(stream)}
+            />
+          ) : allStreams.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+              {allStreams.map((stream) => (
+                <StreamCardLive
+                  key={stream.id}
+                  stream={stream}
+                  duration={durations[stream.id] || 0}
+                  onClick={() => setSelectedStream(stream)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex min-h-[30vh] flex-col items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/50">
+              <div className="text-center max-w-sm">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-900 border border-zinc-800">
+                  <Video className="h-7 w-7 text-zinc-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-zinc-300">No Active Streams</h3>
+                <p className="mt-1.5 text-sm text-zinc-500 leading-relaxed">
+                  {filterEnabled
+                    ? "No streams found within the specified location radius."
+                    : "Waiting for incoming emergency streams..."}
+                </p>
+                <div className="mt-5 flex items-center justify-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                  </span>
+                  <span className="text-xs text-zinc-500">System monitoring active</span>
+                </div>
+                {filterEnabled && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetFilter}
+                    className="mt-4 text-xs border-zinc-700 bg-zinc-900 hover:bg-zinc-800"
+                  >
+                    <RotateCcw className="h-3 w-3 mr-1.5" />
+                    Clear Filter
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Past Streams Section */}
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-600/20 border border-blue-500/30">
+              <Clock className="h-4 w-4 text-blue-500" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Past Recordings</h2>
+              <p className="text-xs text-zinc-500">
+                {pastStreams.length > 0 
+                  ? `${pastStreams.length} recorded stream${pastStreams.length !== 1 ? 's' : ''}`
+                  : 'No recordings yet'}
+              </p>
+            </div>
+          </div>
+
+          {pastStreams.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+              {pastStreams.map((stream) => (
+                <Card
+                  key={stream.id}
+                  className="group cursor-pointer overflow-hidden border-zinc-800 bg-zinc-900 hover:border-zinc-700 transition-colors"
+                  onClick={() => setSelectedPastStream(stream)}
+                >
+                  <CardContent className="p-0">
+                    {/* Thumbnail placeholder */}
+                    <div className="relative aspect-video bg-zinc-800 flex items-center justify-center">
+                      <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/80 group-hover:bg-zinc-900/60 transition-colors">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600/20 border border-blue-500/30 group-hover:bg-blue-600/30 transition-colors">
+                          <Play className="h-5 w-5 text-blue-400" />
+                        </div>
+                      </div>
+                      {/* Duration badge */}
+                      <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded bg-black/70 px-1.5 py-0.5">
+                        <Clock className="h-3 w-3 text-zinc-400" />
+                        <span className="font-mono text-xs text-zinc-300">
+                          {formatDuration(stream.duration_seconds)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Info */}
+                    <div className="p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-zinc-200 truncate">
+                            Stream {stream.id.substring(0, 8)}...
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-1 text-zinc-500">
+                            <Calendar className="h-3 w-3" />
+                            <span className="text-xs">{formatTimestamp(stream.started_at)}</span>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-zinc-500 hover:text-red-400 hover:bg-red-900/30 shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setStreamToDelete(stream);
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+
+                      {stream.latitude !== 0 && stream.longitude !== 0 && (
+                        <div className="flex items-center gap-1.5 text-zinc-500">
+                          <MapPin className="h-3 w-3" />
+                          <span className="text-xs font-mono">
+                            {stream.latitude.toFixed(4)}, {stream.longitude.toFixed(4)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="flex min-h-[20vh] flex-col items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/50">
+              <div className="text-center max-w-sm">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-900 border border-zinc-800">
+                  <Clock className="h-5 w-5 text-zinc-600" />
+                </div>
+                <h3 className="text-base font-semibold text-zinc-400">No Recordings</h3>
+                <p className="mt-1 text-sm text-zinc-500">
+                  Completed streams will appear here
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
       </main>
 
-      {/* Expanded View */}
+      {/* Expanded View for Live Streams */}
       {selectedStream && (
         <ExpandedStreamView
           stream={selectedStream}
@@ -339,6 +538,40 @@ export default function PoliceDashboard() {
           onClose={() => setSelectedStream(null)}
         />
       )}
+
+      {/* Past Stream Viewer */}
+      {selectedPastStream && (
+        <PastStreamViewer
+          stream={selectedPastStream}
+          onClose={() => setSelectedPastStream(null)}
+          onDelete={() => setStreamToDelete(selectedPastStream)}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!streamToDelete} onOpenChange={() => setStreamToDelete(null)}>
+        <AlertDialogContent className="bg-zinc-900 border-zinc-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-zinc-100">Delete Recording?</AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
+              This will permanently delete the recording for stream{" "}
+              <span className="font-mono text-zinc-300">{streamToDelete?.id.substring(0, 12)}...</span>
+              {" "}This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePastStream}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

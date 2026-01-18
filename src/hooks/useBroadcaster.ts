@@ -12,6 +12,7 @@ interface UseBroadcasterOptions {
 interface UseBroadcasterReturn {
   isConnected: boolean;
   isBroadcasting: boolean;
+  isRecording: boolean;
   error: string | null;
   startBroadcast: () => void;
   stopBroadcast: () => void;
@@ -27,10 +28,108 @@ export function useBroadcaster({
 }: UseBroadcasterOptions): UseBroadcasterReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  
+  // Recording refs
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const streamStartTimeRef = useRef<Date | null>(null);
+  const latitudeRef = useRef(latitude);
+  const longitudeRef = useRef(longitude);
+  const notesRef = useRef(notes);
+
+  // Keep refs updated
+  useEffect(() => {
+    latitudeRef.current = latitude;
+    longitudeRef.current = longitude;
+    notesRef.current = notes;
+  }, [latitude, longitude, notes]);
+
+  const uploadRecording = useCallback(async () => {
+    if (recordedChunksRef.current.length === 0 || !streamStartTimeRef.current) {
+      console.log("[Broadcaster] No recording to upload");
+      return;
+    }
+
+    const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+    const endTime = new Date();
+    const durationSeconds = (endTime.getTime() - streamStartTimeRef.current.getTime()) / 1000;
+
+    const formData = new FormData();
+    formData.append("stream_id", streamId);
+    formData.append("started_at", streamStartTimeRef.current.toISOString());
+    formData.append("ended_at", endTime.toISOString());
+    formData.append("latitude", String(latitudeRef.current));
+    formData.append("longitude", String(longitudeRef.current));
+    formData.append("notes", notesRef.current);
+    formData.append("duration_seconds", String(durationSeconds));
+    formData.append("video", blob, `${streamId}.webm`);
+
+    try {
+      const response = await fetch(signalingConfig.uploadUrl, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        console.log("[Broadcaster] Recording uploaded successfully");
+      } else {
+        console.error("[Broadcaster] Failed to upload recording:", await response.text());
+      }
+    } catch (err) {
+      console.error("[Broadcaster] Error uploading recording:", err);
+    }
+
+    // Clear recorded chunks
+    recordedChunksRef.current = [];
+    streamStartTimeRef.current = null;
+  }, [streamId]);
+
+  const startRecording = useCallback(() => {
+    if (!mediaStream) return;
+
+    try {
+      const options = { mimeType: "video/webm;codecs=vp8,opus" };
+      const recorder = new MediaRecorder(mediaStream, options);
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        console.log("[Broadcaster] Recording stopped, uploading...");
+        setIsRecording(false);
+        uploadRecording();
+      };
+
+      recorder.onerror = (event) => {
+        console.error("[Broadcaster] MediaRecorder error:", event);
+        setIsRecording(false);
+      };
+
+      recordedChunksRef.current = [];
+      streamStartTimeRef.current = new Date();
+      recorder.start(1000); // Record in 1-second chunks
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+      console.log("[Broadcaster] Recording started");
+    } catch (err) {
+      console.error("[Broadcaster] Failed to start recording:", err);
+    }
+  }, [mediaStream, uploadRecording]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+    }
+  }, []);
 
   const createPeerConnection = useCallback(
     (viewerId: string): RTCPeerConnection => {
@@ -145,6 +244,9 @@ export function useBroadcaster({
       setIsConnected(true);
       setError(null);
 
+      // Start recording
+      startRecording();
+
       // Register the stream
       ws.send(
         JSON.stringify({
@@ -175,9 +277,12 @@ export function useBroadcaster({
       setIsConnected(false);
       setIsBroadcasting(false);
     };
-  }, [streamId, mediaStream, latitude, longitude, notes, handleSignalingMessage]);
+  }, [streamId, mediaStream, latitude, longitude, notes, handleSignalingMessage, startRecording]);
 
   const stopBroadcast = useCallback(() => {
+    // Stop recording first (this will trigger upload)
+    stopRecording();
+
     // Close all peer connections
     peerConnectionsRef.current.forEach((pc) => pc.close());
     peerConnectionsRef.current.clear();
@@ -191,7 +296,7 @@ export function useBroadcaster({
 
     setIsBroadcasting(false);
     setIsConnected(false);
-  }, []);
+  }, [stopRecording]);
 
   const updateLocation = useCallback((lat: number, lng: number) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -215,6 +320,7 @@ export function useBroadcaster({
   return {
     isConnected,
     isBroadcasting,
+    isRecording,
     error,
     startBroadcast,
     stopBroadcast,
