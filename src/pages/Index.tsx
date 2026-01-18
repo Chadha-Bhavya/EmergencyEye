@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Shield, Radio, ArrowRight, Zap, Lock, MapPin } from "lucide-react";
+import { Shield, Radio, ArrowRight, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Index() {
@@ -67,56 +67,6 @@ export default function Index() {
           </div>
         </div>
       </header>
-
-      {/* Features Section */}
-      <section className="border-t border-zinc-800 bg-zinc-900 py-20">
-        <div className="mx-auto max-w-6xl px-6 lg:px-12">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-white">How it works</h2>
-            <p className="mt-3 text-zinc-400">
-              Designed for speed and safety when every second counts
-            </p>
-          </div>
-
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {/* Feature 1 */}
-            <div className="rounded-xl border border-zinc-700 bg-zinc-800/50 p-6 transition-all hover:border-red-500/50 hover:bg-zinc-800">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-red-600/10 border border-red-500/20">
-                <Radio className="h-6 w-6 text-red-500" />
-              </div>
-              <h3 className="text-lg font-semibold text-white">One-Tap Activation</h3>
-              <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
-                No login, no verification, no delays. Open the link and tap to
-                start streaming immediately.
-              </p>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="rounded-xl border border-zinc-700 bg-zinc-800/50 p-6 transition-all hover:border-emerald-500/50 hover:bg-zinc-800">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-600/10 border border-emerald-500/20">
-                <Lock className="h-6 w-6 text-emerald-500" />
-              </div>
-              <h3 className="text-lg font-semibold text-white">Police-Only Access</h3>
-              <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
-                Streams are only visible to verified law enforcement through a
-                secure, authenticated dashboard.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="rounded-xl border border-zinc-700 bg-zinc-800/50 p-6 transition-all hover:border-blue-500/50 hover:bg-zinc-800">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-600/10 border border-blue-500/20">
-                <MapPin className="h-6 w-6 text-blue-500" />
-              </div>
-              <h3 className="text-lg font-semibold text-white">Live Metadata</h3>
-              <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
-                GPS coordinates, timestamps, and user notes are transmitted
-                alongside the video for full context.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
