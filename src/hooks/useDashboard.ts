@@ -10,14 +10,29 @@ export interface StreamInfo {
   is_active: boolean;
 }
 
+export interface PastStreamInfo {
+  id: string;
+  started_at: string;
+  ended_at: string;
+  latitude: number;
+  longitude: number;
+  notes: string;
+  duration_seconds: number;
+  video_filename: string;
+  video_url: string;
+}
+
 interface UseDashboardReturn {
   streams: StreamInfo[];
+  pastStreams: PastStreamInfo[];
   isConnected: boolean;
   error: string | null;
+  deletePastStream: (streamId: string) => Promise<void>;
 }
 
 export function useDashboard(): UseDashboardReturn {
   const [streams, setStreams] = useState<StreamInfo[]>([]);
+  const [pastStreams, setPastStreams] = useState<PastStreamInfo[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -40,6 +55,7 @@ export function useDashboard(): UseDashboardReturn {
         const message = JSON.parse(event.data);
         if (message.type === "stream_list") {
           setStreams(message.streams || []);
+          setPastStreams(message.past_streams || []);
         }
       } catch (err) {
         console.error("[Dashboard] Failed to parse message:", err);
@@ -58,6 +74,20 @@ export function useDashboard(): UseDashboardReturn {
     };
   }, []);
 
+  const deletePastStream = useCallback(async (streamId: string) => {
+    try {
+      const response = await fetch(`${signalingConfig.pastStreamsUrl}/${streamId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to delete stream");
+      }
+    } catch (err) {
+      console.error("[Dashboard] Failed to delete past stream:", err);
+      throw err;
+    }
+  }, []);
+
   useEffect(() => {
     connect();
 
@@ -73,7 +103,9 @@ export function useDashboard(): UseDashboardReturn {
 
   return {
     streams,
+    pastStreams,
     isConnected,
     error,
+    deletePastStream,
   };
 }
