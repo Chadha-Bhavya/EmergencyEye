@@ -2,22 +2,37 @@
 WebRTC Signaling Server for EmergencyEye
 Handles WebSocket connections for WebRTC peer connection signaling.
 Also handles video recording storage and retrieval.
+Includes Google OAuth authentication for police dashboard.
 """
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Dict, List, Optional
 from dataclasses import dataclass, field, asdict
-from datetime import datetime
+from datetime import datetime, timedelta
+from jose import jwt, JWTError
 import json
 import asyncio
 import os
 import uuid
+import httpx
 from pathlib import Path
 
 app = FastAPI(title="EmergencyEye Signaling Server")
+
+# OAuth Configuration
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+JWT_SECRET = os.getenv("JWT_SECRET", "emergency-eye-secret-key-change-in-production")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRATION_HOURS = 24
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+# Security
+security = HTTPBearer(auto_error=False)
 
 # Create recordings directory
 RECORDINGS_DIR = Path(__file__).parent / "recordings"
@@ -34,6 +49,134 @@ app.add_middleware(
 
 # Serve recordings as static files
 app.mount("/recordings", StaticFiles(directory=str(RECORDINGS_DIR)), name="recordings")
+
+
+# ==================== OAuth Helper Functions ====================
+
+def create_jwt_token(user_data: dict) -> str:
+    """Create a JWT token for authenticated user."""
+    expire = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
+    payload = {
+        "sub": user_data.get("email"),
+        "name": user_data.get("name"),
+        "picture": user_data.get("picture"),
+        "exp": expire,
+        "iat": datetime.utcnow()
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+def verify_jwt_token(token: str) -> Optional[dict]:
+    """Verify and decode a JWT token."""
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return payload
+    except JWTError:
+        return None
+
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Optional[dict]:
+    """Get current user from JWT token in Authorization header."""
+    if not credentials:
+        return None
+    token = credentials.credentials
+    return verify_jwt_token(token)
+
+
+# ==================== OAuth Endpoints ====================
+
+@app.get("/auth/google")
+async def auth_google():
+    """Redirect to Google OAuth consent page."""
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=500, detail="Google OAuth not configured")
+    
+    redirect_uri = f"{FRONTEND_URL}/auth/callback"
+    google_auth_url = (
+        f"https://accounts.google.com/o/oauth2/v2/auth?"
+        f"client_id={GOOGLE_CLIENT_ID}&"
+        f"redirect_uri={redirect_uri}&"
+        f"response_type=code&"
+        f"scope=openid%20email%20profile&"
+        f"access_type=offline&"
+        f"prompt=consent"
+    )
+    return {"auth_url": google_auth_url}
+
+
+@app.post("/auth/google/callback")
+async def auth_google_callback(code: str = Form(...)):
+    """Exchange authorization code for tokens and user info."""
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="Google OAuth not configured")
+    
+    redirect_uri = f"{FRONTEND_URL}/auth/callback"
+    
+    # Exchange code for tokens
+    async with httpx.AsyncClient() as client:
+        token_response = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code"
+            }
+        )
+        
+        if token_response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Failed to exchange authorization code")
+        
+        tokens = token_response.json()
+        access_token = tokens.get("access_token")
+        
+        # Get user info
+        user_response = await client.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        if user_response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Failed to get user info")
+        
+        user_info = user_response.json()
+    
+    # Create our own JWT token
+    jwt_token = create_jwt_token(user_info)
+    
+    return {
+        "token": jwt_token,
+        "user": {
+            "email": user_info.get("email"),
+            "name": user_info.get("name"),
+            "picture": user_info.get("picture")
+        }
+    }
+
+
+@app.get("/auth/verify")
+async def verify_token(user: dict = Depends(get_current_user)):
+    """Verify the current JWT token and return user info."""
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return {
+        "valid": True,
+        "user": {
+            "email": user.get("sub"),
+            "name": user.get("name"),
+            "picture": user.get("picture")
+        }
+    }
+
+
+@app.post("/auth/logout")
+async def logout():
+    """Logout endpoint - client should discard token."""
+    return {"success": True, "message": "Logged out successfully"}
+
+
+
 
 @dataclass
 class StreamInfo:

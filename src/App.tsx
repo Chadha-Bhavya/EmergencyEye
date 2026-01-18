@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import PoliceDashboard from "./pages/PoliceDashboard";
 import PoliceLogin from "./pages/PoliceLogin";
+import OAuthCallback from "./pages/OAuthCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             {/* Legacy /stream route redirects to home - streaming now happens from landing page */}
             <Route path="/stream" element={<Navigate to="/" replace />} />
             <Route path="/police/login" element={<PoliceLogin />} />
+            <Route path="/auth/callback" element={<OAuthCallback />} />
             <Route
               path="/police"
               element={
