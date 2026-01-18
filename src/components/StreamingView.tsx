@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Clock, Square, AlertCircle, Wifi, WifiOff } from "lucide-react";
+import { MapPin, Clock, Square, AlertCircle, Wifi, WifiOff, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LiveIndicator } from "@/components/LiveIndicator";
 import { useBroadcaster } from "@/hooks/useBroadcaster";
@@ -27,6 +27,7 @@ export function StreamingView({
 
   const {
     isBroadcasting,
+    isRecording,
     error: broadcastError,
     startBroadcast,
     stopBroadcast,
@@ -98,14 +99,20 @@ export function StreamingView({
           <div className="flex items-center gap-2">
             <LiveIndicator size="lg" />
             {isBroadcasting ? (
-              <Badge className="bg-success/20 text-success border border-success/30 gap-1">
+              <Badge className="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 gap-1">
                 <Wifi className="h-3 w-3" />
                 Broadcasting
               </Badge>
             ) : (
-              <Badge className="bg-warning/20 text-warning border border-warning/30 gap-1">
+              <Badge className="bg-amber-600/20 text-amber-400 border border-amber-500/30 gap-1">
                 <WifiOff className="h-3 w-3" />
                 Connecting...
+              </Badge>
+            )}
+            {isRecording && (
+              <Badge className="bg-red-600/20 text-red-400 border border-red-500/30 gap-1">
+                <Circle className="h-2.5 w-2.5 fill-red-500" />
+                Recording
               </Badge>
             )}
           </div>
@@ -120,7 +127,7 @@ export function StreamingView({
         {/* Error banner */}
         {(error || broadcastError) && (
           <div className="absolute left-4 right-4 top-16 animate-fade-in">
-            <div className="flex items-center gap-2 rounded-lg bg-warning px-4 py-3 text-warning-foreground">
+            <div className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-3 text-white">
               <AlertCircle className="h-5 w-5 flex-shrink-0" />
               <span className="text-sm font-medium">{error || broadcastError}</span>
             </div>

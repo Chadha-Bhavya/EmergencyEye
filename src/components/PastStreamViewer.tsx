@@ -173,21 +173,35 @@ export function PastStreamViewer({ stream, onClose, onDelete }: PastStreamViewer
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 bg-zinc-900">
-                  <div className="rounded-lg bg-zinc-800 border border-zinc-700 p-3">
-                    <p className="font-mono text-sm text-zinc-300">
-                      {stream.latitude.toFixed(6)}, {stream.longitude.toFixed(6)}
-                    </p>
+                  {/* Always show coordinates in separate boxes */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-lg bg-zinc-800 border border-zinc-700 p-2">
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 mb-1">
+                        Latitude
+                      </p>
+                      <p className="font-mono text-sm text-zinc-300">
+                        {stream.latitude.toFixed(6)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-zinc-800 border border-zinc-700 p-2">
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 mb-1">
+                        Longitude
+                      </p>
+                      <p className="font-mono text-sm text-zinc-300">
+                        {stream.longitude.toFixed(6)}
+                      </p>
+                    </div>
                   </div>
-                  {(stream.latitude && stream.longitude) ? (
+                  {(stream.latitude !== 0 || stream.longitude !== 0) ? (
                     <a 
                       href={`https://www.google.com/maps?q=${stream.latitude},${stream.longitude}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="block"
                     >
-                      <div className="aspect-square rounded-lg overflow-hidden border border-zinc-700 relative group">
+                      <div className="aspect-video rounded-lg overflow-hidden border border-zinc-700 relative group">
                         <img
-                          src={`https://static-maps.yandex.ru/1.x/?ll=${stream.longitude},${stream.latitude}&z=15&l=map&size=400,400&pt=${stream.longitude},${stream.latitude},pm2rdl`}
+                          src={`https://static-maps.yandex.ru/1.x/?ll=${stream.longitude},${stream.latitude}&z=15&l=map&size=400,300&pt=${stream.longitude},${stream.latitude},pm2rdl`}
                           alt="Location map"
                           className="w-full h-full object-cover"
                         />
@@ -199,7 +213,7 @@ export function PastStreamViewer({ stream, onClose, onDelete }: PastStreamViewer
                       </div>
                     </a>
                   ) : (
-                    <div className="aspect-square rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                    <div className="aspect-video rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center">
                       <div className="text-center">
                         <MapPin className="mx-auto h-8 w-8 text-zinc-600" />
                         <p className="mt-2 text-xs text-zinc-500">No location data</p>
