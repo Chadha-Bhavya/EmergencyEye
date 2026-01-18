@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { 
-  X, Clock, MapPin, FileText, Radio, Wifi, WifiOff, 
+import {
+  X, Clock, MapPin, FileText, Radio, Wifi, WifiOff,
   Play, Pause, SkipBack, SkipForward, Circle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,16 +12,15 @@ import { useViewer } from "@/hooks/useViewer";
 
 interface ExpandedStreamViewProps {
   stream: StreamData;
-  duration: number;
   onClose: () => void;
 }
 
-export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStreamViewProps) {
+export function ExpandedStreamView({ stream, onClose }: ExpandedStreamViewProps) {
   const liveVideoRef = useRef<HTMLVideoElement>(null);
   const playbackVideoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
-  
+
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "failed">("connecting");
   const [isLiveMode, setIsLiveMode] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
@@ -29,7 +28,7 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
   const [playbackTime, setPlaybackTime] = useState(0);
   const [playbackDuration, setPlaybackDuration] = useState(0);
   const [bufferSeconds, setBufferSeconds] = useState(0);
-  
+
   const {
     isReceiving,
     remoteStream,
@@ -50,7 +49,7 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
       const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
         ? "video/webm;codecs=vp8,opus"
         : "video/webm";
-      
+
       const recorder = new MediaRecorder(remoteStream, { mimeType });
       recordedChunksRef.current = [];
 
@@ -104,14 +103,14 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
 
     const updateTime = () => {
       if (!isUpdating || !video) return;
-      
+
       setPlaybackTime(video.currentTime);
-      
+
       // Update duration if it becomes available (WebM metadata can be delayed)
       if (video.duration && !isNaN(video.duration) && video.duration !== Infinity) {
         setPlaybackDuration(video.duration);
       }
-      
+
       animationFrameId = requestAnimationFrame(updateTime);
     };
 
@@ -125,7 +124,7 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
 
     video.addEventListener("loadedmetadata", handleLoadedMetadata);
     video.addEventListener("ended", handleEnded);
-    
+
     // Start high-frequency updates
     animationFrameId = requestAnimationFrame(updateTime);
 
@@ -207,7 +206,7 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
           if (playbackVideoRef.current) {
             // Use estimated duration if video duration is not available
             const duration = playbackVideoRef.current.duration && !isNaN(playbackVideoRef.current.duration) && playbackVideoRef.current.duration !== Infinity
-              ? playbackVideoRef.current.duration 
+              ? playbackVideoRef.current.duration
               : result.estimatedDuration;
             playbackVideoRef.current.currentTime = Math.max(0, duration - seconds);
             playbackVideoRef.current.play();
@@ -274,9 +273,9 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
             </Badge>
             <h2 className="text-xl font-bold text-white tracking-tight font-mono">Stream: {stream.id.substring(0, 12)}...</h2>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
             className="text-[hsl(220,15%,50%)] hover:text-white hover:bg-[hsl(240,15%,12%)]"
           >
@@ -310,12 +309,6 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
                           <span>{bufferSeconds}s buffered</span>
                         </div>
                       )}
-                      <div className="flex items-center gap-2 rounded-full bg-[hsl(240,15%,10%)] border border-[hsl(220,15%,18%)] px-3 py-1.5">
-                        <Clock className="h-4 w-4 text-[hsl(220,15%,50%)]" />
-                        <span className="font-mono text-sm font-bold text-white">
-                          {formatDuration(duration)}
-                        </span>
-                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -331,7 +324,7 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
                         className="h-full w-full object-contain"
                       />
                     )}
-                    
+
                     {/* Playback Video */}
                     {!isLiveMode && playbackUrl && (
                       <video
@@ -342,7 +335,7 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
                         className="h-full w-full object-contain"
                       />
                     )}
-                    
+
                     {/* Connecting state */}
                     {!remoteStream && (
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -410,7 +403,7 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="flex items-center justify-center gap-2">
                       <Button
                         variant="outline"
@@ -422,7 +415,7 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
                         <SkipBack className="h-4 w-4 mr-1" />
                         10s
                       </Button>
-                      
+
                       {(isLiveMode || !isPaused) ? (
                         <Button
                           variant="outline"
@@ -445,7 +438,7 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
                           Play
                         </Button>
                       )}
-                      
+
                       <Button
                         variant="outline"
                         size="sm"
@@ -456,14 +449,14 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
                         10s
                         <SkipForward className="h-4 w-4 ml-1" />
                       </Button>
-                      
+
                       <Button
                         variant={isLiveMode ? "default" : "outline"}
                         size="sm"
                         onClick={goLive}
                         disabled={isLiveMode}
-                        className={isLiveMode 
-                          ? "bg-[hsl(350,100%,50%)] hover:bg-[hsl(350,100%,55%)] text-white shadow-[0_0_15px_-3px_hsl(350,100%,55%)]" 
+                        className={isLiveMode
+                          ? "bg-[hsl(350,100%,50%)] hover:bg-[hsl(350,100%,55%)] text-white shadow-[0_0_15px_-3px_hsl(350,100%,55%)]"
                           : "border-[hsl(350,100%,55%)]/50 text-[hsl(350,100%,60%)] hover:bg-[hsl(350,100%,55%)]/20"
                         }
                       >
@@ -503,14 +496,7 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium uppercase tracking-wider text-[hsl(220,15%,45%)]">
-                      Duration
-                    </p>
-                    <p className="font-mono text-lg font-bold text-[hsl(350,100%,55%)]">
-                      {formatDuration(duration)}
-                    </p>
-                  </div>
+
                 </CardContent>
               </Card>
 
@@ -541,9 +527,9 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
                       </p>
                     </div>
                   </div>
-                  
+
                   {hasValidLocation ? (
-                    <a 
+                    <a
                       href={`https://www.google.com/maps?q=${stream.latitude},${stream.longitude}`}
                       target="_blank"
                       rel="noopener noreferrer"

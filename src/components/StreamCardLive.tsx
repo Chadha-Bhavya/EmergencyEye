@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Clock, MapPin, Expand, Video } from "lucide-react";
+import { MapPin, Expand, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useViewer } from "@/hooks/useViewer";
 
@@ -14,13 +14,12 @@ export interface StreamData {
 
 interface StreamCardLiveProps {
   stream: StreamData;
-  duration: number;
   onClick: () => void;
 }
 
-export function StreamCardLive({ stream, duration, onClick }: StreamCardLiveProps) {
+export function StreamCardLive({ stream, onClick }: StreamCardLiveProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  
+
   const { remoteStream, isReceiving, connect, disconnect } = useViewer({
     streamId: stream.id,
   });
@@ -37,11 +36,7 @@ export function StreamCardLive({ stream, duration, onClick }: StreamCardLiveProp
     }
   }, [remoteStream]);
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
+
 
   const formatCoords = (lat: number, lng: number) => {
     if (lat === 0 && lng === 0) return "Acquiring...";
@@ -84,13 +79,7 @@ export function StreamCardLive({ stream, duration, onClick }: StreamCardLiveProp
             </Badge>
           </div>
 
-          {/* Duration */}
-          <div className="absolute right-2 top-2">
-            <Badge className="bg-[hsl(240,15%,8%)]/90 text-white text-[10px] font-mono px-1.5 py-0.5 border border-[hsl(220,15%,20%)]/50 backdrop-blur-sm">
-              <Clock className="h-2.5 w-2.5 mr-1 text-[hsl(220,15%,50%)]" />
-              {formatDuration(duration)}
-            </Badge>
-          </div>
+
 
           {/* Expand overlay on hover */}
           <div className="absolute inset-0 flex items-center justify-center bg-[hsl(240,15%,3%)]/70 opacity-0 group-hover:opacity-100 transition-all duration-300">

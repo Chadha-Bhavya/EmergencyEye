@@ -82,7 +82,6 @@ export default function PoliceDashboard() {
   const [selectedStream, setSelectedStream] = useState<StreamData | null>(null);
   const [selectedPastStream, setSelectedPastStream] = useState<PastStreamInfo | null>(null);
   const [streamToDelete, setStreamToDelete] = useState<PastStreamInfo | null>(null);
-  const [durations, setDurations] = useState<Record<string, number>>({});
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
 
   // Location filter state
@@ -121,22 +120,7 @@ export default function PoliceDashboard() {
     });
   }, [serverStreams, filterEnabled, filterLat, filterLng, filterRadius]);
 
-  // Duration counter
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDurations((prev) => {
-        const updated = { ...prev };
-        allStreams.forEach((stream) => {
-          updated[stream.id] = Math.floor(
-            (Date.now() - stream.startedAt.getTime()) / 1000
-          );
-        });
-        return updated;
-      });
-    }, 1000);
 
-    return () => clearInterval(interval);
-  }, [allStreams]);
 
   const resetFilter = () => {
     setFilterEnabled(false);
@@ -170,6 +154,8 @@ export default function PoliceDashboard() {
       console.error("Failed to delete:", err);
     }
   };
+
+
 
   const formatDuration = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return "00:00";
@@ -396,7 +382,6 @@ export default function PoliceDashboard() {
           {viewMode === "map" ? (
             <StreamMapView
               streams={allStreams}
-              durations={durations}
               onStreamClick={(stream) => setSelectedStream(stream)}
             />
           ) : allStreams.length > 0 ? (
@@ -405,7 +390,6 @@ export default function PoliceDashboard() {
                 <div key={stream.id} className={`animate-fade-in stagger-${Math.min(index + 1, 8)}`}>
                   <StreamCardLive
                     stream={stream}
-                    duration={durations[stream.id] || 0}
                     onClick={() => setSelectedStream(stream)}
                   />
                 </div>
@@ -541,11 +525,9 @@ export default function PoliceDashboard() {
         </section>
       </main>
 
-      {/* Expanded View for Live Streams */}
       {selectedStream && (
         <ExpandedStreamView
           stream={selectedStream}
-          duration={durations[selectedStream.id] || 0}
           onClose={() => setSelectedStream(null)}
         />
       )}

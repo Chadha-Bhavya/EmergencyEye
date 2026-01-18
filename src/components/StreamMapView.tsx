@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPin, Video, Clock, Navigation, ExternalLink } from "lucide-react";
+import { MapPin, Video, Navigation, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,19 +9,14 @@ import type { StreamData } from "@/components/StreamCardLive";
 
 interface StreamMapViewProps {
   streams: StreamData[];
-  durations: Record<string, number>;
   onStreamClick: (stream: StreamData) => void;
 }
 
-export function StreamMapView({ streams, durations, onStreamClick }: StreamMapViewProps) {
+export function StreamMapView({ streams, onStreamClick }: StreamMapViewProps) {
   const [selectedStream, setSelectedStream] = useState<StreamData | null>(null);
   const [hoveredStream, setHoveredStream] = useState<string | null>(null);
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
+
 
   if (streams.length === 0) {
     return (
@@ -45,10 +40,9 @@ export function StreamMapView({ streams, durations, onStreamClick }: StreamMapVi
         {/* Interactive Map Section */}
         <InteractiveStreamMap
           streams={streams}
-          durations={durations}
           onStreamClick={onStreamClick}
         />
-        
+
         {/* Stream List Sidebar */}
         <div className="border-l border-[hsl(220,15%,12%)] bg-[hsl(240,15%,4%)]">
           <div className="p-3 border-b border-[hsl(220,15%,12%)]">
@@ -60,26 +54,24 @@ export function StreamMapView({ streams, durations, onStreamClick }: StreamMapVi
               {streams.map((stream) => {
                 const hasLocation = stream.latitude !== 0 || stream.longitude !== 0;
                 const isSelected = selectedStream?.id === stream.id;
-                
+
                 return (
                   <Card
                     key={stream.id}
-                    className={`cursor-pointer transition-all ${
-                      isSelected 
-                        ? "bg-[hsl(240,15%,10%)] border-[hsl(350,100%,55%)]/50 shadow-[0_0_15px_-5px_hsl(350,100%,55%)]" 
+                    className={`cursor-pointer transition-all ${isSelected
+                        ? "bg-[hsl(240,15%,10%)] border-[hsl(350,100%,55%)]/50 shadow-[0_0_15px_-5px_hsl(350,100%,55%)]"
                         : "bg-[hsl(240,15%,6%)] border-[hsl(220,15%,15%)] hover:border-[hsl(220,15%,25%)] hover:bg-[hsl(240,15%,8%)]"
-                    }`}
+                      }`}
                     onClick={() => setSelectedStream(isSelected ? null : stream)}
                     onMouseEnter={() => setHoveredStream(stream.id)}
                     onMouseLeave={() => setHoveredStream(null)}
                   >
                     <CardContent className="p-3">
                       <div className="flex items-start gap-3">
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg shrink-0 ${
-                          isSelected 
-                            ? "bg-[hsl(350,100%,55%)]/20 border border-[hsl(350,100%,55%)]/50" 
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg shrink-0 ${isSelected
+                            ? "bg-[hsl(350,100%,55%)]/20 border border-[hsl(350,100%,55%)]/50"
                             : "bg-[hsl(240,15%,10%)] border border-[hsl(220,15%,18%)]"
-                        }`}>
+                          }`}>
                           <Video className={`h-5 w-5 ${isSelected ? "text-[hsl(350,100%,60%)]" : "text-[hsl(220,15%,50%)]"}`} />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -91,10 +83,7 @@ export function StreamMapView({ streams, durations, onStreamClick }: StreamMapVi
                               {stream.id.substring(0, 8)}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 mt-1.5 text-xs text-[hsl(220,15%,50%)]">
-                            <Clock className="h-3 w-3" />
-                            <span className="font-mono">{formatDuration(durations[stream.id] || 0)}</span>
-                          </div>
+
                           {hasLocation ? (
                             <div className="flex items-center gap-1.5 mt-1 text-xs text-[hsl(220,15%,40%)]">
                               <MapPin className="h-3 w-3" />
