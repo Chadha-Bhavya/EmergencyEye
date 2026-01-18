@@ -181,6 +181,7 @@ export default function PoliceDashboard() {
   const formatTimestamp = (isoString: string) => {
     const date = new Date(isoString);
     return date.toLocaleString("en-US", {
+      timeZone: "America/Vancouver",
       month: "short",
       day: "numeric",
       hour: "2-digit",
@@ -370,8 +371,8 @@ export default function PoliceDashboard() {
                 size="sm"
                 onClick={() => setViewMode("grid")}
                 className={`h-8 px-3 gap-1.5 text-xs transition-all duration-200 ${viewMode === "grid"
-                    ? "bg-[hsl(240,15%,15%)] text-white"
-                    : "text-[hsl(220,15%,50%)] hover:text-white"
+                  ? "bg-[hsl(240,15%,15%)] text-white"
+                  : "text-[hsl(220,15%,50%)] hover:text-white"
                   }`}
               >
                 <LayoutGrid className="h-3.5 w-3.5" />
@@ -382,8 +383,8 @@ export default function PoliceDashboard() {
                 size="sm"
                 onClick={() => setViewMode("map")}
                 className={`h-8 px-3 gap-1.5 text-xs transition-all duration-200 ${viewMode === "map"
-                    ? "bg-[hsl(240,15%,15%)] text-white"
-                    : "text-[hsl(220,15%,50%)] hover:text-white"
+                  ? "bg-[hsl(240,15%,15%)] text-white"
+                  : "text-[hsl(220,15%,50%)] hover:text-white"
                   }`}
               >
                 <Map className="h-3.5 w-3.5" />

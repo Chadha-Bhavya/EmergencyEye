@@ -249,6 +249,7 @@ export function ExpandedStreamView({ stream, duration, onClose }: ExpandedStream
 
   const formatTimestamp = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
+      timeZone: "America/Vancouver",
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",

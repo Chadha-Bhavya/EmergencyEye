@@ -24,6 +24,7 @@ export function PastStreamViewer({ stream, onClose, onDelete }: PastStreamViewer
   const formatTimestamp = (isoString: string) => {
     const date = new Date(isoString);
     return date.toLocaleString("en-US", {
+      timeZone: "America/Vancouver",
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -55,8 +56,8 @@ export function PastStreamViewer({ stream, onClose, onDelete }: PastStreamViewer
             <h2 className="text-xl font-bold text-white tracking-tight font-mono">Stream: {stream.id.substring(0, 12)}...</h2>
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={handleDownload}
               className="text-[hsl(350,100%,55%)] hover:text-[hsl(350,100%,65%)] hover:bg-[hsl(350,100%,55%)]/10 gap-2"
@@ -64,8 +65,8 @@ export function PastStreamViewer({ stream, onClose, onDelete }: PastStreamViewer
               <Download className="h-4 w-4" />
               Download
             </Button>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={onDelete}
               className="text-[hsl(350,100%,55%)] hover:text-[hsl(350,100%,65%)] hover:bg-[hsl(350,100%,55%)]/10 gap-2"
@@ -73,9 +74,9 @@ export function PastStreamViewer({ stream, onClose, onDelete }: PastStreamViewer
               <Trash2 className="h-4 w-4" />
               Delete
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={onClose}
               className="text-[hsl(220,15%,50%)] hover:text-white hover:bg-[hsl(240,15%,12%)]"
             >
@@ -194,7 +195,7 @@ export function PastStreamViewer({ stream, onClose, onDelete }: PastStreamViewer
                     </div>
                   </div>
                   {(stream.latitude !== 0 || stream.longitude !== 0) ? (
-                    <a 
+                    <a
                       href={`https://www.google.com/maps?q=${stream.latitude},${stream.longitude}`}
                       target="_blank"
                       rel="noopener noreferrer"
