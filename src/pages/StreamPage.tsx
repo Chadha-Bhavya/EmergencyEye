@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Radio, Shield, Phone, Home } from "lucide-react";
+import { Radio, Eye, Phone, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StreamerConfirmModal } from "@/components/StreamerConfirmModal";
 import { StreamingView } from "@/components/StreamingView";
@@ -75,7 +75,7 @@ export default function StreamPage() {
           <div className="relative flex h-10 w-10 items-center justify-center">
             <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[hsl(350,100%,55%)] to-[hsl(350,100%,40%)]" />
             <div className="absolute inset-0 rounded-xl bg-[hsl(350,100%,55%)] blur-md opacity-40" />
-            <Shield className="relative h-5 w-5 text-white" />
+            <Eye className="relative h-5 w-5 text-white" />
           </div>
           <span className="text-lg font-bold text-white tracking-tight">EmergencyEye</span>
         </div>

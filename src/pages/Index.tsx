@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Shield, Radio, Zap, ChevronRight, Signal } from "lucide-react";
+import { Eye, Radio, Zap, ChevronRight, Signal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StreamerConfirmModal } from "@/components/StreamerConfirmModal";
 import { StreamingView } from "@/components/StreamingView";
@@ -76,7 +76,7 @@ export default function Index() {
           <div className="relative flex h-11 w-11 items-center justify-center">
             <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[hsl(350,100%,55%)] to-[hsl(350,100%,40%)] opacity-90" />
             <div className="absolute inset-0 rounded-xl bg-[hsl(350,100%,55%)] blur-lg opacity-50" />
-            <Shield className="relative h-5 w-5 text-white" />
+            <Eye className="relative h-5 w-5 text-white" />
           </div>
           <span className="text-xl font-bold tracking-tight">EmergencyEye</span>
         </div>

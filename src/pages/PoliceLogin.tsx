@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Lock, Mail, AlertCircle } from 'lucide-react';
+import { Eye, Lock, Mail, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,9 +47,9 @@ export default function PoliceLogin() {
                 <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[hsl(350,100%,50%)] opacity-[0.03] blur-[120px]" />
             </div>
 
-            {/* Shield watermark */}
+            {/* Eye watermark */}
             <div className="absolute inset-0 flex items-center justify-center opacity-[0.02]">
-                <Shield className="w-[500px] h-[500px]" />
+                <Eye className="w-[500px] h-[500px]" />
             </div>
 
             {/* Login card */}
@@ -61,7 +61,7 @@ export default function PoliceLogin() {
                     {/* Header */}
                     <div className="text-center mb-8">
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[hsl(350,100%,50%)] to-[hsl(350,100%,40%)] mb-4 shadow-[0_0_30px_-5px_hsl(350,100%,50%)]">
-                            <Shield className="w-8 h-8 text-white" />
+                            <Eye className="w-8 h-8 text-white" />
                         </div>
                         <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">Law Enforcement Access</h1>
                         <p className="text-[hsl(220,15%,45%)] text-sm">Authorized Personnel Only</p>
@@ -120,12 +120,12 @@ export default function PoliceLogin() {
                         >
                             {isLoading ? (
                                 <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 border-2 border-[hsl(240,15%,5%)]/30 border-t-[hsl(240,15%,5%)] rounded-full animate-spin" />
+                                    <div className="w-5 h-5 border-2 border-[hsl(240,15%,5%)]/30 border-t-[hsl(240,15%,5%)] rounded-full animate-spin" />
                                     <span>Authenticating...</span>
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-2">
-                                    <Shield className="w-5 h-5" />
+                                    <Eye className="w-5 h-5" />
                                     <span>Access Dashboard</span>
                                 </div>
                             )}
