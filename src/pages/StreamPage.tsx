@@ -77,7 +77,7 @@ export default function StreamPage() {
             <div className="absolute inset-0 rounded-xl bg-[hsl(350,100%,55%)] blur-md opacity-40" />
             <Eye className="relative h-5 w-5 text-white" />
           </div>
-          <span className="text-lg font-bold text-white tracking-tight">EmergencyEye</span>
+          <span className="text-lg font-bold text-white tracking-tight">Emergency Eye</span>
         </div>
         <Button
           variant="ghost"

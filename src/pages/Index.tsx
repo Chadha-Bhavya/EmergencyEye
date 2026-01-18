@@ -78,7 +78,7 @@ export default function Index() {
             <div className="absolute inset-0 rounded-xl bg-[hsl(350,100%,55%)] blur-lg opacity-50" />
             <Eye className="relative h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-bold tracking-tight">EmergencyEye</span>
+          <span className="text-xl font-bold tracking-tight">Emergency Eye</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex items-center gap-2 text-sm text-[hsl(220,15%,50%)]">
@@ -100,11 +100,6 @@ export default function Index() {
 
       {/* Hero content */}
       <div className="relative z-10 mx-auto max-w-5xl px-6 pt-20 pb-32 text-center lg:px-12 lg:pt-32">
-        {/* Badge */}
-        <div className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-[hsl(220,15%,18%)] bg-[hsl(240,15%,6%)] px-5 py-2 text-sm animate-fade-in stagger-1">
-          <Zap className="h-4 w-4 text-[hsl(35,100%,55%)]" />
-          <span className="text-[hsl(220,15%,70%)]">Zero-friction emergency response</span>
-        </div>
 
         {/* Title */}
         <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl lg:text-7xl animate-fade-in stagger-2">
