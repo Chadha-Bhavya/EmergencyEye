@@ -1,8 +1,66 @@
+import { useState, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Shield, Radio, Zap, ChevronRight, Signal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StreamerConfirmModal } from "@/components/StreamerConfirmModal";
+import { StreamingView } from "@/components/StreamingView";
+import { useMediaStream } from "@/hooks/useMediaStream";
+import { useGeolocation } from "@/hooks/useGeolocation";
 
 export default function Index() {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [isStarting, setIsStarting] = useState(false);
+  const streamIdRef = useRef<string>(crypto.randomUUID());
+
+  const { stream, isStreaming, error: mediaError, startStream, stopStream } = useMediaStream();
+  const { location, watchLocation, stopWatching } = useGeolocation();
+
+  const handleStartClick = () => {
+    // Start location tracking early so we have coordinates when stream starts
+    watchLocation();
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmStream = useCallback(
+    async (userNotes: string) => {
+      setIsStarting(true);
+      setNotes(userNotes);
+
+      // Start media stream
+      const success = await startStream();
+
+      if (success) {
+        setShowConfirmModal(false);
+      }
+
+      setIsStarting(false);
+    },
+    [startStream]
+  );
+
+  const handleStopStream = useCallback(() => {
+    stopStream();
+    stopWatching();
+    setNotes("");
+    // Generate new stream ID for next stream
+    streamIdRef.current = crypto.randomUUID();
+  }, [stopStream, stopWatching]);
+
+  // If streaming, show full-screen streaming view
+  if (isStreaming && stream) {
+    return (
+      <StreamingView
+        stream={stream}
+        streamId={streamIdRef.current}
+        location={location}
+        notes={notes}
+        onStop={handleStopStream}
+        error={mediaError || undefined}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen text-white overflow-hidden">
       {/* Ambient background effects */}
@@ -67,14 +125,12 @@ export default function Index() {
         <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row animate-fade-in stagger-4">
           <Button 
             size="lg" 
-            asChild 
+            onClick={handleStartClick}
             className="relative h-14 px-8 bg-gradient-to-r from-[hsl(350,100%,50%)] to-[hsl(350,100%,45%)] hover:from-[hsl(350,100%,55%)] hover:to-[hsl(350,100%,50%)] text-white font-semibold text-base gap-3 border-0 shadow-[0_0_40px_-10px_hsl(350,100%,55%)] hover:shadow-[0_0_60px_-10px_hsl(350,100%,60%)] transition-all duration-300 group"
           >
-            <Link to="/stream">
-              <div className="absolute inset-0 rounded-md bg-gradient-to-r from-[hsl(350,100%,60%)] to-[hsl(350,100%,50%)] opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300" />
-              <Radio className="relative h-5 w-5 animate-glow-pulse" />
-              <span className="relative">Start Emergency Stream</span>
-            </Link>
+            <div className="absolute inset-0 rounded-md bg-gradient-to-r from-[hsl(350,100%,60%)] to-[hsl(350,100%,50%)] opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300" />
+            <Radio className="relative h-5 w-5 animate-glow-pulse" />
+            <span className="relative">Start Emergency Stream</span>
           </Button>
         </div>
 
@@ -97,6 +153,14 @@ export default function Index() {
 
       {/* Bottom accent line */}
       <div className="fixed bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(350,100%,55%)] to-transparent opacity-30" />
+
+      {/* Confirmation modal */}
+      <StreamerConfirmModal
+        open={showConfirmModal}
+        onOpenChange={setShowConfirmModal}
+        onConfirm={handleConfirmStream}
+        isLoading={isStarting}
+      />
     </div>
   );
 }
