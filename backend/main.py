@@ -1,5 +1,5 @@
 """
-WebRTC Signaling Server for SafeStream
+WebRTC Signaling Server for EmergencyEye
 Handles WebSocket connections for WebRTC peer connection signaling.
 Also handles video recording storage and retrieval.
 """
@@ -17,7 +17,7 @@ import os
 import uuid
 from pathlib import Path
 
-app = FastAPI(title="SafeStream Signaling Server")
+app = FastAPI(title="EmergencyEye Signaling Server")
 
 # Create recordings directory
 RECORDINGS_DIR = Path(__file__).parent / "recordings"
@@ -91,7 +91,7 @@ async def broadcast_stream_list():
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "service": "SafeStream Signaling Server"}
+    return {"status": "ok", "service": "EmergencyEye Signaling Server"}
 
 
 @app.get("/streams")

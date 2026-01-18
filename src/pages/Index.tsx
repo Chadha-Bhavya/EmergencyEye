@@ -78,16 +78,16 @@ export default function Index() {
             <div className="absolute inset-0 rounded-xl bg-[hsl(350,100%,55%)] blur-lg opacity-50" />
             <Shield className="relative h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-bold tracking-tight">SafeStream</span>
+          <span className="text-xl font-bold tracking-tight">EmergencyEye</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex items-center gap-2 text-sm text-[hsl(220,15%,50%)]">
             <Signal className="h-3.5 w-3.5 text-[hsl(160,100%,45%)]" />
             <span>System Operational</span>
           </div>
-          <Button 
-            variant="ghost" 
-            asChild 
+          <Button
+            variant="ghost"
+            asChild
             className="text-[hsl(220,15%,60%)] hover:text-white hover:bg-[hsl(220,15%,12%)] border border-transparent hover:border-[hsl(220,15%,20%)] transition-all duration-300"
           >
             <Link to="/police/login">
@@ -123,8 +123,8 @@ export default function Index() {
 
         {/* CTA */}
         <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row animate-fade-in stagger-4">
-          <Button 
-            size="lg" 
+          <Button
+            size="lg"
             onClick={handleStartClick}
             className="relative h-14 px-8 bg-gradient-to-r from-[hsl(350,100%,50%)] to-[hsl(350,100%,45%)] hover:from-[hsl(350,100%,55%)] hover:to-[hsl(350,100%,50%)] text-white font-semibold text-base gap-3 border-0 shadow-[0_0_40px_-10px_hsl(350,100%,55%)] hover:shadow-[0_0_60px_-10px_hsl(350,100%,60%)] transition-all duration-300 group"
           >
